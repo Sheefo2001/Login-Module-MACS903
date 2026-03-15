@@ -62,9 +62,12 @@ Secure-only app (blocks `/login-insecure`):
 python app_secure.py
 ```
 
+
 Default ports:
+- `app.py`: `5000`
 - `app_insecure.py`: `5001`
 - `app_secure.py`: `5002`
+
 
 Override either with `PORT`, example:
 
