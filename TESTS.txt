@@ -1,0 +1,111 @@
+Login Assessment Test Harness: Test Descriptions
+================================================
+
+This file explains the purpose of each test emitted by scripts/test_harness.py.
+The same tests run in both modes:
+- Black-box: HTTP requests to a running server.
+- White-box: Flask test client (no server required).
+
+Legend:
+- PASS means the expected behavior was observed.
+- FAIL prints the expectation detail for debugging.
+
+Core Tests
+----------
+
+reset-db
+Purpose: Ensure the reset endpoint is reachable and seeds data.
+Checks: /reset-db returns a successful status (<400).
+
+health
+Purpose: Confirm the app and DB are reachable.
+Checks: /health returns HTTP 200.
+
+health-payload
+Purpose: Validate the JSON schema of /health.
+Checks: payload.status == "ok" and payload.db == "ok".
+
+correlation-id
+Purpose: Validate tracing and correlation ID behavior.
+Checks: When sending X-Request-Id, the same value is echoed back.
+
+admin-create-user
+Purpose: Verify admin can create new test users.
+Checks: POST /admin/create-user succeeds (status <400).
+Note: Skipped if --skip-admin is used.
+
+admin-user-insecure-login
+Purpose: Ensure a newly created user can log in via the insecure flow.
+Checks: Response contains "Logged in (insecure)."
+
+admin-user-secure-login
+Purpose: Ensure a newly created user can log in via the secure flow.
+Checks: Response contains "Logged in (secure)."
+
+secure-cookie-flags
+Purpose: Verify security flags on the secure session cookie.
+Checks: Set-Cookie contains HttpOnly, Secure, SameSite=Strict.
+Note: This validates server behavior; browsers may not store Secure cookies on HTTP.
+
+insecure-user-enum
+Purpose: Confirm verbose error messages enable enumeration.
+Checks: "User does not exist" appears for unknown usernames.
+
+insecure-bad-pass
+Purpose: Confirm insecure flow reveals incorrect password.
+Checks: "Incorrect password" appears for valid username + wrong password.
+
+insecure-valid
+Purpose: Confirm insecure flow accepts valid credentials.
+Checks: "Logged in (insecure)." appears.
+
+insecure-sqli-user
+Purpose: Confirm SQL injection bypass via username.
+Checks: Injection payload in username logs in successfully.
+
+insecure-sqli-pass
+Purpose: Confirm SQL injection bypass via password.
+Checks: Injection payload in password logs in successfully.
+
+insecure-show-sql
+Purpose: Validate SQL debug toggle output.
+Checks: "SQL Debug" appears when show_sql is enabled.
+Note: Skipped when --basic is used.
+
+secure-generic-error
+Purpose: Ensure secure flow avoids user enumeration.
+Checks: "Invalid credentials" appears and verbose error text does not.
+
+secure-sqli-blocked
+Purpose: Ensure SQL injection does not bypass the secure flow.
+Checks: Injection payload still yields "Invalid credentials".
+
+secure-rate-limit
+Purpose: Validate lockout behavior after repeated failures.
+Checks: After enough failed attempts, status code is HTTP 429.
+
+secure-lockout-blocks-valid
+Purpose: Ensure lockout blocks valid credentials during the window.
+Checks: After lockout triggers, valid credentials still return HTTP 429.
+
+Environment and Mode Notes
+--------------------------
+
+White-box mode requirements:
+- DATABASE_URL must be set (or .env present).
+- Migrations must be applied (alembic upgrade head).
+
+Black-box mode requirements:
+- Server must be running at the given base URL.
+
+Advanced flags:
+- --basic skips advanced checks (SQL debug, cookie flags, lockout validation).
+- --skip-admin skips the admin create-user flow tests.
+
+Advanced Automation (Your Harness)
+----------------------------------
+Black-box:
+  python scripts/test_harness.py --mode black --base-url http://localhost:5000
+
+White-box:
+  python scripts/test_harness.py --mode white
